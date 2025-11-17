@@ -6,6 +6,7 @@
 #include "../comm/comm.h"
 #include <errno.h>
 #include <ctype.h>
+#include <signal.h>
 
 
 char* envIpv4(char* var){
@@ -29,8 +30,8 @@ int envPort(char* var){
 
 
 int main(void) {
-   int port;
-   
+   //TODO: SIGNAL
+   int port = envPort("IP_SERVER");
    char* addr = envIpv4("IP_SERVER");
 
    int clientSocket = socket(AF_INET,SOCK_STREAM,0);

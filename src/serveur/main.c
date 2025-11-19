@@ -19,9 +19,6 @@
 
 #define TAILLE 3
 
-void aa() {
-  printf("bonjouor");
-}
 sem_t plein, vide;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 

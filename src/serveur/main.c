@@ -17,7 +17,7 @@
  * dans les codes vus en cours).
  **/
 
-#define TAILLE 3
+#define TAILLE 20
 
 sem_t plein, vide;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;

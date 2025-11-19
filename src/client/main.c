@@ -30,7 +30,7 @@ int envPort(char* var){
 
 
 int main(void) {
-   //TODO: SIGNAL
+   signal(SIGPIPE,SIG_IGN);
    int port = envPort("IP_SERVER");
    char* addr = envIpv4("IP_SERVER");
 
@@ -40,10 +40,7 @@ int main(void) {
    addrClient.sin_family = AF_INET;
    addrClient.sin_port = htons(port);
 
-   connect(clientSocket,(const struct sockaddr*)&addrClient,sizeof(addrClient)); //TODO: GERER L'ERREUR
-
-
-
+   if (connect(clientSocket,(const struct sockaddr*)&addrClient,sizeof(addrClient))!= 0){exit errno;}
 
    return 0;
 }

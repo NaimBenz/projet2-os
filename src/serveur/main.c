@@ -21,9 +21,7 @@
 
 #define TAILLE 3
 
-void aa() {
-  printf("bonjouor");
-}
+
 sem_t plein, vide;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -76,21 +74,57 @@ void* producteur(void* tampon_) {
   return NULL;
 }
 
-void handler_sigpipe(int signal){
-  if(signal == SIGPIPE){
-    char message[]= "Interception of sigpipe";
+void s_sigpipe(){
+    const char message[]= "Interception of sigpipe";
     size_t number_character = strlen(message);
     int fd = 1;
-    ssize_t error = write(fd,message,number_character);
-    
+    ssize_t n = write(fd,message,number_character);
+    (void)n;
+}
+
+void s_sigint(){
+    const char message[]= "Interception of sigint";
+    size_t number_character = strlen(message);
+    int fd = 1;
+    ssize_t n = write(fd,message,number_character);
+    (void)n;
+}
+
+
+void handler(int signal){
+  switch (signal)
+  {
+  case SIGINT:
+    s_sigint();
+    break;
+  case SIGPIPE:
+    s_sigpipe();
+    break;
   }
+  /*if(signal == SIGINT){
+    s_sigpipe();
+  }else{
+    s_sigint();
+  }*/
 }
 
 int main(void) {
+
+  struct sigaction action;
+  action.sa_handler = handler;
+  sigemptyset(&action.sa_mask);  
+  action.sa_flags = 0;               
+
+  if (sigaction(SIGPIPE, &action, NULL) < 0
+        || sigaction(SIGINT,&action,NULL) < 0) {
+        perror("sigaction");
+  }
+
   pthread_t thread_consommateur;
   pthread_t thread_producteur;
+  //signal(SIGINT,handler_sigin);
 
-  signal(SIGINT, handler_sigpipe);
+
 
   int tampon[TAILLE];
 

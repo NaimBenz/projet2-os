@@ -2,6 +2,7 @@
 #include <semaphore.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -74,9 +75,17 @@ void* producteur(void* tampon_) {
   return NULL;
 }
 
+void handler_sigpipe(int signal){
+  if(signal == SIGPIPE){
+    printf("Interception of SIGPIPE \n");
+  }
+}
+
 int main(void) {
   pthread_t thread_consommateur;
   pthread_t thread_producteur;
+
+  signal(SIGINT, handler_sigpipe);
 
   int tampon[TAILLE];
 

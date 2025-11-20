@@ -1,10 +1,10 @@
+#include <arpa/inet.h>
 #include <asm-generic/socket.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <stdbool.h>
 #include <stdio.h>
-#include <unistd.h>
-
-#include <arpa/inet.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -23,7 +23,11 @@
 sem_t plein, vide;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
+bool isvalid(int n) {
+  return (n > 0) && ((n >> 16) == 0);
+}
 int server(void) {
+  const char* stack[20];
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
   int opt = 1;
 
@@ -32,8 +36,15 @@ int server(void) {
   struct sockaddr_in adress;
   adress.sin_family = AF_INET;
   adress.sin_addr.s_addr = INADDR_ANY;
-  adress.sin_port = htons(8080);
+  // Setting port for server socket
+  if ((getenv("PORT_SERVEUR") != NULL) &&
+      isvalid(atoi(getenv("PORT_SERVEUR")))) {
+    adress.sin_port =
+        inet_pton(AF_INET, getenv("PORT_SERVEUR"), &adress.sin_port);
+  } else
+    adress.sin_port = PORT_PAR_DEFAUT;
 
+  // Bind socket to server port
   int ret = bind(server_fd, (struct sockaddr*)&adress, sizeof(adress));
   listen(server_fd, 1000);
 
@@ -41,6 +52,22 @@ int server(void) {
   // TODO: here i am
   int new_socket =
       accept(server_fd, (struct sockaddr*)&adress, (socklen_t*)&addrlen);
+  char buffer[1024];
+  int lu;
+
+  // Pour le serveur, on se contente de renvoyer
+  // au client tout ce qui est reçu. Comme le
+  // socket est SOCK_STREAM, plusieurs appels à
+  // read() peuvent être nécessaires pour lire
+  // le message en entier.
+  // TODO: J'ai un problème avec le fait qu'il y ai un while
+  while ((lu = read(new_socket, buffer, 1024)) > 0) {
+    if (buffer[0] == 'p') {
+      // If producteur, then write on queue
+    } else if (buffer[0] == 'c') {
+      // If consommateur, then take from queue
+    }
+  }
   return 0;
 }
 
@@ -51,19 +78,16 @@ void* consommateur(void* tampon_) {
 
   int* tampon = tampon_;
 
-  do {
-    sem_wait(&plein);
-    pthread_mutex_lock(&mutex);
-    // Consommer
-    objet = tampon[indice_consommation];
-    pthread_mutex_unlock(&mutex);
-    sem_post(&vide);
+  sem_wait(&plein);
+  pthread_mutex_lock(&mutex);
+  // Consommer
+  objet = tampon[indice_consommation];
+  pthread_mutex_unlock(&mutex);
+  sem_post(&vide);
 
-    printf("Ici consommateur : tampon[%d] = %d\n", indice_consommation, objet);
-    indice_consommation = (indice_consommation + 1) % TAILLE;
-    nombre_deja_consommes++;
-    sleep(2);
-  } while (nombre_deja_consommes <= 5);
+  printf("Ici consommateur : tampon[%d] = %d\n", indice_consommation, objet);
+  indice_consommation = (indice_consommation + 1) % TAILLE;
+  nombre_deja_consommes++;
 
   return NULL;
 }
@@ -75,21 +99,18 @@ void* producteur(void* tampon_) {
 
   int* tampon = tampon_;
 
-  do {
-    sem_wait(&vide);
-    pthread_mutex_lock(&mutex);
+  sem_wait(&vide);
+  pthread_mutex_lock(&mutex);
 
-    // Produire (objet devrait être mis à jour
-    // en fonction de ce qui est produit)
-    tampon[indice_production] = objet;
-    pthread_mutex_unlock(&mutex);
-    sem_post(&plein);
-    printf("Ici producteur : tampon[%d] = %d\n", indice_production, objet);
-    objet++;
-    nombre_deja_produits++;
-    indice_production = (indice_production + 1) % TAILLE;
-    sleep(2);
-  } while (nombre_deja_produits <= 5);
+  // Produire (objet devrait être mis à jour
+  // en fonction de ce qui est produit)
+  tampon[indice_production] = objet;
+  pthread_mutex_unlock(&mutex);
+  sem_post(&plein);
+  printf("Ici producteur : tampon[%d] = %d\n", indice_production, objet);
+  objet++;
+  nombre_deja_produits++;
+  indice_production = (indice_production + 1) % TAILLE;
   return NULL;
 }
 

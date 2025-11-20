@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "../comm/comm.h"
 
@@ -77,7 +78,11 @@ void* producteur(void* tampon_) {
 
 void handler_sigpipe(int signal){
   if(signal == SIGPIPE){
-    printf("Interception of SIGPIPE \n");
+    char message[]= "Interception of sigpipe";
+    size_t number_character = strlen(message);
+    int fd = 1;
+    ssize_t error = write(fd,message,number_character);
+    
   }
 }
 

@@ -1,3 +1,4 @@
+#include <asm-generic/socket.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <stdio.h>
@@ -21,6 +22,27 @@
 
 sem_t plein, vide;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int server(void) {
+  int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+  int opt = 1;
+
+  setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
+             sizeof(opt));
+  struct sockaddr_in adress;
+  adress.sin_family = AF_INET;
+  adress.sin_addr.s_addr = INADDR_ANY;
+  adress.sin_port = htons(8080);
+
+  int ret = bind(server_fd, (struct sockaddr*)&adress, sizeof(adress));
+  listen(server_fd, 1000);
+
+  size_t addrlen = sizeof(adress);
+  // TODO: here i am
+  int new_socket =
+      accept(server_fd, (struct sockaddr*)&adress, (socklen_t*)&addrlen);
+  return 0;
+}
 
 void* consommateur(void* tampon_) {
   int indice_consommation = 0;

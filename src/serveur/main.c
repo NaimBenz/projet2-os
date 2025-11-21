@@ -20,6 +20,7 @@
  **/
 
 #define TAILLE 3
+#define STDERR_FD 2
 
 
 sem_t plein, vide;
@@ -74,19 +75,20 @@ void* producteur(void* tampon_) {
   return NULL;
 }
 
+//Faire un vector de string afin de limiter la répétition de variable
+
+
 void s_sigpipe(){
     const char message[]= "Interception of sigpipe";
     size_t number_character = strlen(message);
-    int fd = 1;
-    ssize_t n = write(fd,message,number_character);
+    ssize_t n = write(STDERR_FD,message,number_character);
     (void)n;
 }
 
 void s_sigint(){
-    const char message[]= "Interception of sigint";
+    const char message[]= "Interception of %i";
     size_t number_character = strlen(message);
-    int fd = 1;
-    ssize_t n = write(fd,message,number_character);
+    ssize_t n = write(STDERR_FD,message,number_character);
     (void)n;
 }
 
@@ -101,11 +103,6 @@ void handler(int signal){
     s_sigpipe();
     break;
   }
-  /*if(signal == SIGINT){
-    s_sigpipe();
-  }else{
-    s_sigint();
-  }*/
 }
 
 int main(void) {
@@ -122,9 +119,6 @@ int main(void) {
 
   pthread_t thread_consommateur;
   pthread_t thread_producteur;
-  //signal(SIGINT,handler_sigin);
-
-
 
   int tampon[TAILLE];
 
